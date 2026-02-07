@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+{% block title %}Live — {{ run_id[:8] }} — SDLC Dashboard{% endblock %}
+
+{% block extra_styles %}
+.live-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.live-header h1 {
+    font-size: 1.5rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.live-header h1 .status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--success);
+    animation: pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+}
+
+.live-header h1 .status-dot.running {
+    background: var(--accent);
+}
+
+.live-meta {
+    display: flex;
+    gap: 1.5rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    flex-wrap: wrap;
+}
+
+.live-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Progress Bar */
+.progress-container {
+    margin-bottom: 2rem;
+}
+
+.progress-bar-wrap {
+    height: 6px;
+    background: var(--bg-glass);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: var(--gradient-1);
+    border-radius: 3px;
+    transition: width 0.6s ease-out;
+    width: 0%;
+}
+
+.progress-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+/* Phase Timeline */
+.timeline {
+    position: relative;
+    padding-left: 40px;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--border);
+}
+
+.phase-card {
+    position: relative;
+    margin-bottom: 1.25rem;
+    animation: slideUp 0.35s ease-out;
+}
+
+.phase-card .dot {
+    position: absolute;
+    left: -33px;
+    top: 18px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: var(--bg-primary);
+    z-index: 2;
+    transition: all 0.3s;
+}
+
+.phase-card.waiting .dot {
+    border-color: var(--text-muted);
+    background: var(--bg-primary);
+}
+
+.phase-card.running .dot {
+    border-color: var(--accent);
+    background: var(--accent);
+    box-shadow: 0 0 12px var(--accent-glow);
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+.phase-card.completed .dot {
+    border-color: var(--success);
+    background: var(--success);
+    box-shadow: 0 0 8px rgba(16,185,129,0.3);
+}
+
+.phase-inner {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.3s;
+}
+
+.phase-card.running .phase-inner {
+    border-color: rgba(99,102,241,0.3);
+    box-shadow: 0 0 30px rgba(99,102,241,0.08);
+}
+
+.phase-card.completed .phase-inner {
+    border-color: rgba(16,185,129,0.2);
+}
+
+.phase-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.phase-header:hover {
+    background: var(--bg-glass-hover);
+}
+
+.phase-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+.phase-title .icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.phase-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.phase-model {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    background: var(--bg-glass);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+
+.phase-body {
+    display: none;
+    padding: 0 18px 18px;
+    border-top: 1px solid var(--border);
+}
+
+.phase-body.open {
+    display: block;
+}
+
+.phase-body .content-preview {
+    max-height: 400px;
+    overflow: auto;
+    font-size: 0.85rem;
+    line-height: 1.7;
+}
+
+/* Live agent output stream */
+.live-output {
+    background: #0d1117;
+    border: 1px solid rgba(99,102,241,0.2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-top: 10px;
+    max-height: 350px;
+    overflow-y: auto;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    line-height: 1.65;
+    color: #c9d1d9;
+    white-space: pre-wrap;
+    word-break: break-word;
+    scroll-behavior: smooth;
+}
+
+.live-output .agent-label {
+    color: #58a6ff;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.live-output .chunk {
+    color: #8b949e;
+}
+
+.live-cursor {
+    display: inline-block;
+    width: 8px;
+    height: 14px;
+    background: var(--accent);
+    animation: blink 1s step-end infinite;
+    vertical-align: text-bottom;
+    margin-left: 2px;
+}
+
+@keyframes blink {
+    50% { opacity: 0; }
+}
+
+/* Streaming Dots */
+.streaming-indicator {
+    display: inline-flex;
+    gap: 4px;
+    margin-left: 8px;
+}
+
+.streaming-indicator span {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: streamDot 1.2s ease-in-out infinite;
+}
+
+.streaming-indicator span:nth-child(2) { animation-delay: 0.2s; }
+.streaming-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes streamDot {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+}
+
+/* Timer */
+.timer {
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: var(--accent);
+    font-weight: 600;
+}
+
+/* Complete Banner */
+.complete-banner {
+    background: linear-gradient(135deg, rgba(16,185,129,0.1), rgba(16,185,129,0.05));
+    border: 1px solid rgba(16,185,129,0.3);
+    border-radius: var(--radius);
+    padding: 2rem;
+    text-align: center;
+    margin-top: 1.5rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.complete-banner h2 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    color: #34d399;
+    margin-bottom: 0.5rem;
+}
+
+.complete-banner p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.complete-banner .actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 1.25rem;
+}
+
+/* status msg */
+.status-message {
+    text-align: center;
+    padding: 1rem;
+    color: var(--text-muted);
+    font-size: 0.88rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+{% endblock %}
+
+{% block content %}
+<div class="live-header">
+    <div>
+        <h1>
+            <span class="status-dot running" id="statusDot"></span>
+            <span id="headerTitle">Starting Pipeline...</span>
+        </h1>
+        <div class="live-meta">
+            <span><i class="fas fa-fingerprint"></i> <span class="uuid-short">{{ run_id[:8] }}...</span></span>
+            <span><i class="fas fa-stopwatch"></i> <span class="timer" id="timer">00:00</span></span>
+            <span id="phaseCounter"><i class="fas fa-list-ol"></i> 0 / 7 phases</span>
+        </div>
+    </div>
+    <div>
+        <span class="badge badge-running" id="statusBadge">
+            <div class="spinner" style="width:12px;height:12px;border-width:2px;"></div>
+            Running
+        </span>
+    </div>
+</div>
+
+<!-- Progress Bar -->
+<div class="progress-container">
+    <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progressBar"></div>
+    </div>
+    <div class="progress-labels">
+        <span id="currentPhaseLabel">Initializing...</span>
+        <span id="progressPercent">0%</span>
+    </div>
+</div>
+
+<!-- Status Message -->
+<div class="status-message" id="statusMessage">
+    <div class="spinner"></div>
+    <span>Connecting to pipeline stream...</span>
+</div>
+
+<!-- Phase Timeline -->
+<div class="timeline" id="timeline"></div>
+
+<!-- Complete Banner (hidden until done) -->
+<div id="completeBanner" style="display:none;"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const RUN_ID = "{{ run_id }}";
+const TOTAL_PHASES = 7;
+let completedPhases = 0;
+let startTime = Date.now();
+let timerInterval;
+
+// Timer
+function updateTimer() {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('timer').textContent = `${m}:${s}`;
+}
+timerInterval = setInterval(updateTimer, 1000);
+
+// Phase colors/icons from server
+const phaseConfig = {{ phases | tojson }};
+
+function createPhaseCard(phase, index) {
+    const card = document.createElement('div');
+    card.className = 'phase-card waiting';
+    card.id = `phase-${index}`;
+
+    const cfg = phaseConfig[index] || {};
+    const color = cfg.color || '#6366f1';
+    const icon = cfg.icon || 'fa-circle';
+
+    card.innerHTML = `
+        <div class="dot"></div>
+        <div class="phase-inner">
+            <div class="phase-header" onclick="togglePhase(${index})">
+                <div class="phase-title">
+                    <div class="icon" style="background: ${color};">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div>
+                        <div>${cfg.phase ? cfg.phase.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Phase ' + (index+1)}</div>
+                        <div style="font-size:0.72rem;color:var(--text-muted);font-weight:400;margin-top:2px;">
+                            ${cfg.agent || 'Agent'} <span class="phase-model">${(cfg.model || '').replace('ollama/', '')}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="phase-right">
+                    <span class="badge badge-info phase-status" id="status-${index}">Waiting</span>
+                </div>
+            </div>
+            <div class="phase-body" id="body-${index}">
+                <div class="content-preview md-content" id="content-${index}">
+                    <p style="color:var(--text-muted);font-style:italic;">Waiting for agent response...</p>
+                </div>
+            </div>
+        </div>
+    `;
+    return card;
+}
+
+function togglePhase(index) {
+    const body = document.getElementById(`body-${index}`);
+    if (body) body.classList.toggle('open');
+}
+
+// Initialize timeline
+const timeline = document.getElementById('timeline');
+for (let i = 0; i < TOTAL_PHASES; i++) {
+    timeline.appendChild(createPhaseCard({}, i));
+}
+
+// SSE Connection
+const evtSource = new EventSource(`/stream/${RUN_ID}`);
+
+evtSource.onmessage = function(e) {
+    const data = JSON.parse(e.data);
+
+    switch (data.event) {
+        case 'pipeline_start':
+            document.getElementById('statusMessage').style.display = 'none';
+            document.getElementById('headerTitle').textContent = 'Pipeline Running';
+            // Update phase cards with real data
+            if (data.phases) {
+                data.phases.forEach((p, i) => {
+                    const cfg = phaseConfig[i];
+                    if (cfg) {
+                        cfg.phase = p.phase;
+                        cfg.agent = p.agent;
+                        cfg.phase_id = p.phase_id;
+                    }
+                });
+                // Rebuild timeline with real data
+                timeline.innerHTML = '';
+                for (let i = 0; i < TOTAL_PHASES; i++) {
+                    timeline.appendChild(createPhaseCard(data.phases[i] || {}, i));
+                }
+            }
+            break;
+
+        case 'status':
+            const msgEl = document.getElementById('statusMessage');
+            msgEl.innerHTML = `<div class="spinner"></div><span>${escapeHtml(data.message)}</span>`;
+            msgEl.style.display = 'flex';
+            break;
+
+        case 'phase_start': {
+            document.getElementById('statusMessage').style.display = 'none';
+            const phIdx = data.phase_index;
+
+            // Auto-complete ALL previous running phases (safety net)
+            for (let prev = 0; prev < phIdx; prev++) {
+                const prevCard = document.getElementById(`phase-${prev}`);
+                if (prevCard && !prevCard.classList.contains('completed')) {
+                    prevCard.className = 'phase-card completed';
+                    const prevSb = document.getElementById(`status-${prev}`);
+                    if (prevSb) {
+                        prevSb.className = 'badge badge-success';
+                        prevSb.innerHTML = '<i class="fas fa-check"></i> Complete';
+                    }
+                    const prevLo = document.getElementById(`live-out-${prev}`);
+                    if (prevLo) prevLo.querySelectorAll('.live-cursor').forEach(c => c.remove());
+                    const prevBody = document.getElementById(`body-${prev}`);
+                    if (prevBody) prevBody.classList.remove('open');
+                    if (!document.getElementById(`phase-${prev}`).__counted) {
+                        completedPhases++;
+                        document.getElementById(`phase-${prev}`).__counted = true;
+                    }
+                }
+            }
+
+            const phCard = document.getElementById(`phase-${phIdx}`);
+            if (phCard) {
+                phCard.className = 'phase-card running';
+                const statusBadge = document.getElementById(`status-${phIdx}`);
+                if (statusBadge) {
+                    statusBadge.className = 'badge badge-running';
+                    statusBadge.innerHTML = '<div class="spinner" style="width:10px;height:10px;border-width:2px;"></div> Running';
+                }
+                // Auto-open this phase, close others
+                for (let j = 0; j < TOTAL_PHASES; j++) {
+                    const b = document.getElementById(`body-${j}`);
+                    if (b) { j === phIdx ? b.classList.add('open') : b.classList.remove('open'); }
+                }
+
+                const content = document.getElementById(`content-${phIdx}`);
+                if (content) {
+                    content.innerHTML = `<p style="color:var(--text-muted);">
+                        <i class="fas fa-robot"></i> ${escapeHtml(data.agent)} is working...
+                        <span class="streaming-indicator"><span></span><span></span><span></span></span>
+                    </p>
+                    <div class="live-output" id="live-out-${phIdx}"><span class="live-cursor"></span></div>`;
+                }
+            }
+            const phaseName = data.phase ? data.phase.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '';
+            document.getElementById('currentPhaseLabel').textContent = phaseName;
+            const pctNow = Math.round((completedPhases / TOTAL_PHASES) * 100);
+            document.getElementById('progressBar').style.width = pctNow + '%';
+            document.getElementById('progressPercent').textContent = pctNow + '%';
+            document.getElementById('phaseCounter').innerHTML =
+                `<i class="fas fa-list-ol"></i> ${completedPhases} / ${TOTAL_PHASES} phases`;
+            break;
+        }
+
+        case 'agent_output':
+            const aoIdx = data.phase_index;
+            const liveOut = document.getElementById(`live-out-${aoIdx}`);
+            if (liveOut) {
+                // Remove cursor, append text, re-add cursor
+                const cursors = liveOut.querySelectorAll('.live-cursor');
+                cursors.forEach(c => c.remove());
+
+                const chunk = document.createElement('span');
+                chunk.className = 'chunk';
+                chunk.textContent = data.text;
+                liveOut.appendChild(chunk);
+
+                // Keep only last ~30KB to prevent DOM bloat
+                if (liveOut.textContent.length > 30000) {
+                    while (liveOut.childNodes.length > 20) {
+                        liveOut.removeChild(liveOut.firstChild);
+                    }
+                }
+
+                // Re-add blinking cursor
+                const cursor = document.createElement('span');
+                cursor.className = 'live-cursor';
+                liveOut.appendChild(cursor);
+
+                // Auto-scroll to bottom
+                liveOut.scrollTop = liveOut.scrollHeight;
+            }
+            break;
+
+        case 'phase_complete': {
+            const ci = data.phase_index;
+            const cc = document.getElementById(`phase-${ci}`);
+            if (cc) {
+                cc.className = 'phase-card completed';
+                const sb = document.getElementById(`status-${ci}`);
+                if (sb) {
+                    sb.className = 'badge badge-success';
+                    sb.innerHTML = '<i class="fas fa-check"></i> Complete';
+                }
+                // Remove live cursor
+                const lo = document.getElementById(`live-out-${ci}`);
+                if (lo) lo.querySelectorAll('.live-cursor').forEach(c => c.remove());
+
+                const ct = document.getElementById(`content-${ci}`);
+                if (ct && data.content) {
+                    const ext = data.file ? data.file.split('.').pop() : '';
+                    if (ext === 'py') {
+                        ct.innerHTML = `<div class="code-block"><div class="code-header">
+                            <span><i class="fas fa-file-code"></i> ${escapeHtml(data.file)}</span>
+                            <span>${(data.content_length || 0).toLocaleString()} chars</span>
+                        </div><pre><code class="language-python">${escapeHtml(data.content || '')}</code></pre></div>`;
+                    } else {
+                        ct.innerHTML = `<div class="md-content">${renderMarkdown(data.content || '')}</div>`;
+                    }
+                    ct.querySelectorAll('pre code').forEach(block => hljs.highlightElement(block));
+                }
+            }
+            if (!cc.__counted) {
+                completedPhases++;
+                cc.__counted = true;
+            }
+            const pct = Math.round((completedPhases / TOTAL_PHASES) * 100);
+            document.getElementById('progressBar').style.width = pct + '%';
+            document.getElementById('progressPercent').textContent = pct + '%';
+            document.getElementById('phaseCounter').innerHTML =
+                `<i class="fas fa-list-ol"></i> ${completedPhases} / ${TOTAL_PHASES} phases`;
+            break;
+        }
+
+        case 'pipeline_complete':
+            clearInterval(timerInterval);
+            document.getElementById('statusDot').className = 'status-dot';
+            document.getElementById('statusDot').style.background = 'var(--success)';
+            document.getElementById('statusDot').style.animation = 'none';
+            document.getElementById('headerTitle').textContent = 'Pipeline Complete';
+            document.getElementById('statusBadge').className = 'badge badge-success';
+            document.getElementById('statusBadge').innerHTML = '<i class="fas fa-check-circle"></i> Complete';
+            document.getElementById('progressBar').style.width = '100%';
+            document.getElementById('progressPercent').textContent = '100%';
+            document.getElementById('currentPhaseLabel').textContent = 'All phases completed';
+
+            const banner = document.getElementById('completeBanner');
+            banner.style.display = 'block';
+            banner.innerHTML = `
+                <div class="complete-banner">
+                    <h2><i class="fas fa-check-circle"></i> Pipeline Complete!</h2>
+                    <p>All 7 SDLC phases finished in <strong>${data.elapsed_display}</strong>.
+                       ${data.files_count} files generated.</p>
+                    <div style="margin-top:0.75rem;">
+                        <span class="uuid" style="font-size:0.8rem;">${RUN_ID}</span>
+                    </div>
+                    <div class="actions">
+                        <a href="/detail/${RUN_ID}" class="btn btn-primary">
+                            <i class="fas fa-folder-open"></i> View All Artifacts
+                        </a>
+                        <a href="/" class="btn btn-secondary">
+                            <i class="fas fa-plus"></i> New Pipeline
+                        </a>
+                        <a href="/history" class="btn btn-secondary">
+                            <i class="fas fa-clock-rotate-left"></i> History
+                        </a>
+                    </div>
+                </div>
+            `;
+            break;
+
+        case 'error':
+            document.getElementById('statusMessage').innerHTML =
+                `<span style="color:var(--error);"><i class="fas fa-exclamation-triangle"></i> ${escapeHtml(data.message)}</span>`;
+            document.getElementById('statusMessage').style.display = 'flex';
+            document.getElementById('statusBadge').className = 'badge badge-error';
+            document.getElementById('statusBadge').innerHTML = '<i class="fas fa-times"></i> Error';
+            clearInterval(timerInterval);
+            break;
+
+        case 'done':
+            evtSource.close();
+            break;
+    }
+};
+
+evtSource.onerror = function() {
+    setTimeout(() => {
+        if (evtSource.readyState === EventSource.CLOSED) {
+            document.getElementById('statusMessage').innerHTML =
+                '<span style="color:var(--text-muted);">Stream ended.</span>';
+        }
+    }, 1000);
+};
+</script>
+{% endblock %}

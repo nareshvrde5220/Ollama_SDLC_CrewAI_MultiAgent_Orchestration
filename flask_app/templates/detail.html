@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+{% block title %}Run {{ manifest.run_id[:8] }} — SDLC Dashboard{% endblock %}
+
+{% block extra_styles %}
+.detail-header {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.detail-header h1 {
+    font-size: 1.35rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.detail-req {
+    color: var(--text-secondary);
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin-bottom: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--bg-glass);
+    border-radius: var(--radius-xs);
+    border-left: 3px solid var(--accent);
+}
+
+.detail-meta-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.meta-item .label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+}
+
+.meta-item .value {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.meta-item .value.mono {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    user-select: all;
+}
+
+/* Phase Cards */
+.artifact-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1rem;
+    transition: all 0.3s;
+}
+
+.artifact-card:hover {
+    border-color: var(--border-active);
+}
+
+.artifact-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 18px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+}
+
+.artifact-header:hover {
+    background: var(--bg-glass-hover);
+}
+
+.artifact-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.artifact-title .num {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #fff;
+    flex-shrink: 0;
+}
+
+.artifact-title .info h4 {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.artifact-title .info .sub {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    display: flex;
+    gap: 12px;
+    margin-top: 2px;
+}
+
+.artifact-title .info .sub span {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.artifact-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.artifact-body {
+    display: none;
+    border-top: 1px solid var(--border);
+}
+
+.artifact-body.open {
+    display: block;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.artifact-content {
+    padding: 1rem 1.25rem;
+    max-height: 600px;
+    overflow: auto;
+}
+
+.artifact-content pre {
+    margin: 0;
+}
+
+/* UUID Phase Banner */
+.phase-uuid-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 18px;
+    background: rgba(99,102,241,0.05);
+    border-bottom: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+.phase-uuid-bar .label {
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+/* Conversation Log */
+.conv-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.conv-table th {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.conv-table td {
+    font-size: 0.84rem;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    color: var(--text-secondary);
+}
+
+.conv-table tr:hover td {
+    background: var(--bg-glass-hover);
+}
+
+/* Copy button */
+.copy-btn {
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    padding: 4px 10px;
+    border-radius: var(--radius-xs);
+    cursor: pointer;
+    font-size: 0.75rem;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: var(--bg-glass-hover);
+    color: var(--text-primary);
+}
+
+/* Toggle chevron */
+.chevron {
+    transition: transform 0.25s;
+    color: var(--text-muted);
+}
+
+.artifact-card.open .chevron {
+    transform: rotate(180deg);
+}
+{% endblock %}
+
+{% block content %}
+<!-- Detail Header -->
+<div class="detail-header">
+    <h1>
+        <i class="fas fa-folder-open" style="color: var(--accent);"></i>
+        Pipeline Run
+        <span class="badge badge-success"><i class="fas fa-check"></i> {{ manifest.status or 'completed' }}</span>
+    </h1>
+
+    <div class="detail-req">
+        <strong>Requirement:</strong> {{ manifest.user_requirement }}
+    </div>
+
+    <div class="detail-meta-grid">
+        <div class="meta-item">
+            <span class="label">Run ID</span>
+            <span class="value mono" onclick="copyToClipboard('{{ manifest.run_id }}')" style="cursor:pointer;" title="Click to copy">
+                {{ manifest.run_id }}
+            </span>
+        </div>
+        <div class="meta-item">
+            <span class="label">Timestamp</span>
+            <span class="value">{{ manifest.timestamp | format_ts }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="label">Duration</span>
+            <span class="value">{{ manifest.elapsed_seconds }}s ({{ "%.1f"|format(manifest.elapsed_seconds / 60) }} min)</span>
+        </div>
+        <div class="meta-item">
+            <span class="label">Framework</span>
+            <span class="value">{{ manifest.framework }}</span>
+        </div>
+        <div class="meta-item">
+            <span class="label">Phases</span>
+            <span class="value">{{ manifest.phases | length }} completed</span>
+        </div>
+    </div>
+</div>
+
+<!-- Navigation tabs -->
+<div class="tabs">
+    <div class="tab active" onclick="switchTab('artifacts')">
+        <i class="fas fa-file-code"></i> Artifacts ({{ artifacts | length }})
+    </div>
+    <div class="tab" onclick="switchTab('conversation')">
+        <i class="fas fa-comments"></i> Conversation Log
+    </div>
+    <div class="tab" onclick="switchTab('manifest')">
+        <i class="fas fa-file-lines"></i> Raw Manifest
+    </div>
+</div>
+
+<!-- Artifacts Tab -->
+<div class="tab-content active" id="tab-artifacts">
+    {% set colors = ['#6366f1','#8b5cf6','#a855f7','#d946ef','#ec4899','#f43f5e','#f97316'] %}
+    {% set icons = ['fa-clipboard-list','fa-code','fa-magnifying-glass-chart','fa-flask-vial','fa-book','fa-gears','fa-palette'] %}
+
+    {% for art in artifacts %}
+    <div class="artifact-card" id="artifact-{{ loop.index0 }}">
+        <!-- Phase UUID bar -->
+        <div class="phase-uuid-bar">
+            <span class="label">Phase UUID:</span>
+            <span class="uuid" onclick="copyToClipboard('{{ art.phase_id }}')" style="cursor:pointer;" title="Click to copy">
+                {{ art.phase_id }}
+            </span>
+            <span style="margin-left:auto;">{{ art.size | filesizeformat }}</span>
+        </div>
+
+        <div class="artifact-header" onclick="toggleArtifact({{ loop.index0 }})">
+            <div class="artifact-title">
+                <div class="num" style="background: {{ colors[loop.index0 % 7] }};">{{ loop.index }}</div>
+                <div class="info">
+                    <h4>{{ art.phase_name | replace('_', ' ') | title }}</h4>
+                    <div class="sub">
+                        <span><i class="fas fa-user-astronaut"></i> {{ art.agent }}</span>
+                        <span><i class="fas fa-microchip"></i> {{ art.model | replace('ollama/', '') }}</span>
+                        <span><i class="fas fa-file"></i> {{ art.output_file }}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="artifact-actions">
+                <button class="copy-btn" onclick="event.stopPropagation(); copyContent({{ loop.index0 }})">
+                    <i class="fas fa-copy"></i> Copy
+                </button>
+                <i class="fas fa-chevron-down chevron"></i>
+            </div>
+        </div>
+
+        <div class="artifact-body" id="art-body-{{ loop.index0 }}">
+            <div class="artifact-content">
+                {% if art.extension == '.py' %}
+                <pre><code class="language-python">{{ art.content }}</code></pre>
+                {% elif art.extension == '.md' %}
+                <div class="md-content" id="md-{{ loop.index0 }}">{{ art.content }}</div>
+                {% else %}
+                <pre><code>{{ art.content }}</code></pre>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div style="text-align:center;margin-top:1rem;">
+        <button class="btn btn-secondary" onclick="expandAll()">
+            <i class="fas fa-expand"></i> Expand All
+        </button>
+        <button class="btn btn-secondary" onclick="collapseAll()">
+            <i class="fas fa-compress"></i> Collapse All
+        </button>
+    </div>
+</div>
+
+<!-- Conversation Log Tab -->
+<div class="tab-content" id="tab-conversation">
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title"><i class="fas fa-comments"></i> Agent Conversation Log</div>
+        </div>
+        <div style="overflow-x: auto;">
+            <table class="conv-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Phase</th>
+                        <th>Agent</th>
+                        <th>Model</th>
+                        <th>Phase UUID</th>
+                        <th>Output</th>
+                        <th>Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for conv in conversations %}
+                    <tr>
+                        <td style="font-weight:600;">{{ loop.index }}</td>
+                        <td>{{ conv.phase | replace('_', ' ') | title }}</td>
+                        <td>{{ conv.agent }}</td>
+                        <td><span class="phase-model">{{ conv.model | replace('ollama/', '') }}</span></td>
+                        <td>
+                            <span class="uuid" onclick="copyToClipboard('{{ conv.phase_id }}')" style="cursor:pointer;">
+                                {{ conv.phase_id[:12] }}...
+                            </span>
+                        </td>
+                        <td>{{ conv.output_file }}</td>
+                        <td>{{ conv.output_length | filesizeformat }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Raw Manifest Tab -->
+<div class="tab-content" id="tab-manifest">
+    <div class="code-block">
+        <div class="code-header">
+            <span><i class="fas fa-file-code"></i> manifest.json</span>
+            <button class="copy-btn" onclick="copyToClipboard(manifestJson)">
+                <i class="fas fa-copy"></i> Copy
+            </button>
+        </div>
+        <pre><code class="language-json" id="manifestCode">{{ manifest | tojson(indent=2) }}</code></pre>
+    </div>
+</div>
+
+<!-- Actions Bar -->
+<div style="display:flex;justify-content:center;gap:12px;margin-top:2rem;padding-bottom:2rem;">
+    <a href="/" class="btn btn-primary">
+        <i class="fas fa-plus"></i> New Pipeline
+    </a>
+    <a href="/history" class="btn btn-secondary">
+        <i class="fas fa-clock-rotate-left"></i> Back to History
+    </a>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const manifestJson = {{ manifest | tojson }};
+const artifactContents = [
+    {% for art in artifacts %}
+    {{ art.content | tojson }},
+    {% endfor %}
+];
+
+function toggleArtifact(idx) {
+    const card = document.getElementById(`artifact-${idx}`);
+    const body = document.getElementById(`art-body-${idx}`);
+    if (body.classList.contains('open')) {
+        body.classList.remove('open');
+        card.classList.remove('open');
+    } else {
+        body.classList.add('open');
+        card.classList.add('open');
+        // Highlight code on first open
+        body.querySelectorAll('pre code:not(.hljs)').forEach(block => hljs.highlightElement(block));
+    }
+}
+
+function copyContent(idx) {
+    copyToClipboard(artifactContents[idx] || '');
+}
+
+function expandAll() {
+    document.querySelectorAll('.artifact-card').forEach((card, i) => {
+        card.classList.add('open');
+        document.getElementById(`art-body-${i}`).classList.add('open');
+    });
+    document.querySelectorAll('pre code:not(.hljs)').forEach(block => hljs.highlightElement(block));
+}
+
+function collapseAll() {
+    document.querySelectorAll('.artifact-card').forEach((card, i) => {
+        card.classList.remove('open');
+        document.getElementById(`art-body-${i}`).classList.remove('open');
+    });
+}
+
+function switchTab(name) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${name}`).classList.add('active');
+    // Find matching tab button
+    document.querySelectorAll('.tab').forEach(t => {
+        if (t.textContent.toLowerCase().includes(name.replace('manifest','raw').substring(0,4))) {
+            t.classList.add('active');
+        }
+    });
+    // Highlight code if needed
+    if (name === 'manifest') {
+        const el = document.getElementById('manifestCode');
+        if (el && !el.classList.contains('hljs')) hljs.highlightElement(el);
+    }
+}
+
+// Render markdown content
+document.addEventListener('DOMContentLoaded', () => {
+    {% for art in artifacts %}
+    {% if art.extension == '.md' %}
+    const mdEl{{ loop.index0 }} = document.getElementById('md-{{ loop.index0 }}');
+    if (mdEl{{ loop.index0 }}) {
+        mdEl{{ loop.index0 }}.innerHTML = renderMarkdown(mdEl{{ loop.index0 }}.textContent);
+    }
+    {% endif %}
+    {% endfor %}
+
+    // Fix tab switching
+    const tabs = document.querySelectorAll('.tab');
+    const tabNames = ['artifacts', 'conversation', 'manifest'];
+    tabs.forEach((tab, i) => {
+        tab.onclick = () => {
+            tabs.forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            tab.classList.add('active');
+            document.getElementById(`tab-${tabNames[i]}`).classList.add('active');
+            if (tabNames[i] === 'manifest') {
+                const el = document.getElementById('manifestCode');
+                if (el && !el.classList.contains('hljs')) hljs.highlightElement(el);
+            }
+        };
+    });
+});
+</script>
+{% endblock %}

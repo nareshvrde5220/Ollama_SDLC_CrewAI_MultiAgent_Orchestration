@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}History — SDLC Dashboard{% endblock %}
+
+{% block extra_styles %}
+.run-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    text-decoration: none;
+    color: inherit;
+}
+
+.run-row:hover {
+    border-color: var(--border-active);
+    box-shadow: var(--shadow-glow);
+    transform: translateY(-2px);
+}
+
+.run-info h3 {
+    font-size: 0.92rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.run-info .requirement-text {
+    color: var(--text-secondary);
+    font-size: 0.84rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.run-meta {
+    display: flex;
+    gap: 1.25rem;
+    margin-top: 8px;
+    flex-wrap: wrap;
+}
+
+.run-meta span {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.run-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.search-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 1.5rem;
+}
+
+.search-input {
+    flex: 1;
+    padding: 10px 16px;
+    padding-left: 40px;
+    background: var(--bg-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    outline: none;
+    transition: all 0.25s;
+}
+
+.search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.search-wrap {
+    position: relative;
+    flex: 1;
+}
+
+.search-wrap i {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.counter-text {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    margin-bottom: 1rem;
+}
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1><i class="fas fa-clock-rotate-left"></i> Pipeline History</h1>
+    <p>All previous SDLC pipeline runs with UUID tracking</p>
+</div>
+
+<!-- Search Bar -->
+<div class="search-bar">
+    <div class="search-wrap">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" id="searchInput"
+               placeholder="Search by UUID, requirement, or timestamp...">
+    </div>
+</div>
+
+<div class="counter-text">
+    <span id="runCount">{{ runs|length }}</span> pipeline runs found
+</div>
+
+<!-- Run List -->
+<div id="runList">
+{% if runs %}
+    {% for run in runs %}
+    <a href="/detail/{{ run.run_id }}" class="run-row slide-up" data-search="{{ run.run_id }} {{ run.requirement }} {{ run.timestamp }}">
+        <div class="run-info">
+            <h3>
+                <span class="uuid-short">{{ run.run_id[:8] }}</span>
+                <span class="badge badge-success" style="font-size:0.68rem;">
+                    <i class="fas fa-check"></i> {{ run.status }}
+                </span>
+            </h3>
+            <div class="requirement-text">{{ run.requirement }}</div>
+            <div class="run-meta">
+                <span><i class="fas fa-calendar"></i> {{ run.timestamp | format_ts }}</span>
+                <span><i class="fas fa-stopwatch"></i> {{ run.elapsed }}s</span>
+                <span><i class="fas fa-layer-group"></i> {{ run.phases_count }} phases</span>
+                <span><i class="fas fa-fingerprint"></i> {{ run.run_id[:12] }}...</span>
+            </div>
+        </div>
+        <div class="run-actions">
+            <span class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-right"></i> View
+            </span>
+        </div>
+    </a>
+    {% endfor %}
+{% else %}
+    <div class="empty-state">
+        <i class="fas fa-inbox"></i>
+        <h3>No Pipeline Runs Yet</h3>
+        <p>Start your first SDLC pipeline to see results here.</p>
+        <a href="/" class="btn btn-primary" style="margin-top:1rem;">
+            <i class="fas fa-rocket"></i> Start Pipeline
+        </a>
+    </div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('searchInput').addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    const rows = document.querySelectorAll('.run-row');
+    let visible = 0;
+    rows.forEach(row => {
+        const searchData = (row.dataset.search || '').toLowerCase();
+        const show = !q || searchData.includes(q);
+        row.style.display = show ? '' : 'none';
+        if (show) visible++;
+    });
+    document.getElementById('runCount').textContent = visible;
+});
+</script>
+{% endblock %}
