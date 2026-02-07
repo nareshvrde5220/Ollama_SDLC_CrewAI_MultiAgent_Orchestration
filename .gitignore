@@ -33,6 +33,9 @@ htmlcov/
 .pytest_cache/
 .tox/
 
+# ── Output (generated at runtime) ────────────────────────────────────────────
+# crewai_output/     # uncomment to ignore generated pipeline runs
+
 # ── Misc ─────────────────────────────────────────────────────────────────────
 *.log
 *.bak

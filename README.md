@@ -41,9 +41,7 @@
 | 🔄 **Iterative Code Review** | Developer ↔ Reviewer loop (up to 3 rounds) until code is approved |
 | 🆔 **UUID Traceability** | Every run and phase gets a UUID — full audit trail with manifests |
 | 🌐 **Live Web Dashboard** | Flask + SSE real-time streaming of agent output |
-| 📟 **CLI Mode** | Headless terminal execution for automation / CI integration |
-| 📊 **History & Replay** | Browse past runs, inspect artifacts, view conversation logs |
-| 🏗️ **Dual Architecture** | Two implementations: raw Ollama API (`sdlc_agents/`) and CrewAI (`crewai_sdlc/`) |
+| � **History & Replay** | Browse past runs, inspect artifacts, view conversation logs |
 
 ---
 
@@ -107,21 +105,7 @@ User Requirement
 
 ```
 Ollama_SDLC_CrewAI_MultiAgent_Orchestration/
-├── run_sdlc.py                 # CLI entry — raw Ollama API pipeline
-├── run_crewai_sdlc.py          # CLI entry — CrewAI-based pipeline
-├── PROJECT_DOCUMENTATION.md    # Comprehensive project docs
-│
-├── sdlc_agents/                # Implementation 1: Raw Ollama API
-│   ├── config.py               #   Agent ↔ model mapping & settings
-│   ├── base_agent.py           #   Base agent class (HTTP → Ollama)
-│   ├── agents.py               #   7 specialized agent classes
-│   └── orchestrator.py         #   Pipeline orchestrator
-│
-├── crewai_sdlc/                # Implementation 2: CrewAI framework
-│   ├── config.py               #   LLM instances & agent mappings
-│   └── crew.py                 #   Agents, tasks & crew assembly
-│
-├── flask_app/                  # Web Dashboard
+├── flask_app/                  # Flask Web Dashboard (main entry)
 │   ├── app.py                  #   Flask server + SSE streaming
 │   └── templates/              #   Jinja2 HTML templates
 │       ├── base.html           #     Layout base
@@ -131,18 +115,30 @@ Ollama_SDLC_CrewAI_MultiAgent_Orchestration/
 │       ├── detail.html         #     Inspect run artifacts
 │       └── 404.html            #     Error page
 │
-└── crewai_output/              # Generated pipeline outputs
-    ├── manifest.json           #   Index of all runs
-    └── <uuid>/                 #   Per-run folder
-        ├── 01_specification.md
-        ├── 02_code.py
-        ├── 03_review.md
-        ├── 04_tests.py
-        ├── 05_documentation.md
-        ├── 06_devops.md
-        ├── 07_ui_app.py
-        ├── manifest.json
-        └── conversation_log.json
+├── crewai_sdlc/                # CrewAI Agent & Pipeline Engine
+│   ├── __init__.py             #   Package init
+│   ├── config.py               #   LLM instances & agent mappings
+│   └── crew.py                 #   Agents, tasks & crew assembly
+│
+├── crewai_output/              # Generated pipeline outputs
+│   └── <uuid>/                 #   Per-run folder
+│       ├── 01_specification.md
+│       ├── 02_code.py
+│       ├── 03_review.md
+│       ├── 04_tests.py
+│       ├── 05_documentation.md
+│       ├── 06_devops.md
+│       ├── 07_ui_app.py
+│       ├── manifest.json
+│       └── conversation_log.json
+│
+├── requirements.txt            # Python dependencies
+├── pyproject.toml              # PEP 621 project metadata
+├── .env.example                # Environment variable template
+├── .gitignore                  # Git ignore rules
+├── LICENSE                     # MIT License
+├── CONTRIBUTING.md             # Contribution guide
+└── PROJECT_DOCUMENTATION.md    # Comprehensive project docs
 ```
 
 ---
@@ -175,41 +171,26 @@ ollama_env\Scripts\activate        # Windows
 # source ollama_env/bin/activate   # Linux / macOS
 
 # Install dependencies
-pip install crewai litellm flask requests
+pip install -r requirements.txt
 ```
 
 ---
 
 ## ▶️ Usage
 
-### Option 1 — CLI (Raw Ollama API)
-
-```bash
-python run_sdlc.py
-python run_sdlc.py --requirement "Build a REST API for a todo app"
-python run_sdlc.py --requirement-file requirements.txt --output-dir my_output
-```
-
-### Option 2 — CLI (CrewAI Framework)
-
-```bash
-python run_crewai_sdlc.py
-python run_crewai_sdlc.py -r "Build a REST API for a todo app"
-python run_crewai_sdlc.py -f requirements.txt -o my_output
-```
-
-### Option 3 — Flask Web Dashboard
+### Start the Dashboard
 
 ```bash
 python flask_app/app.py
 # Open http://localhost:5000 in your browser
 ```
 
-The dashboard lets you:
-- Submit requirements via a web form
-- Watch agents work in **real-time** via Server-Sent Events (SSE)
-- Browse **history** of all past runs
-- Inspect individual run **artifacts**
+### What You Can Do
+
+- **Submit** a requirement via the web form (e.g. *"Build a REST API for a todo app"*)
+- **Watch** 7 AI agents work in **real-time** via Server-Sent Events (SSE)
+- **Browse** the **history** of all past pipeline runs
+- **Inspect** individual run **artifacts** (spec, code, tests, docs, etc.)
 
 ---
 
@@ -228,20 +209,6 @@ Each pipeline run generates 7 artifacts inside a UUID-named folder:
 | `07_ui_app.py` | Streamlit UI application |
 
 Plus `manifest.json` (run metadata) and `conversation_log.json` (full agent conversation history with UUIDs).
-
----
-
-## 🏗️ Dual Architecture
-
-This project provides **two independent implementations** of the same SDLC pipeline:
-
-| | `sdlc_agents/` | `crewai_sdlc/` |
-|---|---|---|
-| **Approach** | Direct Ollama HTTP API calls | CrewAI framework with LiteLLM |
-| **Entry point** | `run_sdlc.py` | `run_crewai_sdlc.py` |
-| **Agent class** | Custom `BaseOllamaAgent` | CrewAI `Agent` |
-| **Orchestration** | Manual `SDLCOrchestrator` | CrewAI `Crew` (sequential) |
-| **Best for** | Fine-grained control | Rapid prototyping, callbacks |
 
 ---
 
@@ -273,7 +240,7 @@ This project provides **two independent implementations** of the same SDLC pipel
 
 ## 📄 License
 
-This project is open source. See the repository for license details.
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 

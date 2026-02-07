@@ -25,10 +25,6 @@ dev = [
     "flake8>=7.0.0",
 ]
 
-[project.scripts]
-sdlc-cli = "run_sdlc:main"
-sdlc-crewai = "run_crewai_sdlc:main"
-
 [project.urls]
 Repository = "https://github.com/nareshvrde5220/Ollama_SDLC_CrewAI_MultiAgent_Orchestration"
 
