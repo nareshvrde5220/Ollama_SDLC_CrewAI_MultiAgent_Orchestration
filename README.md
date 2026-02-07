@@ -56,7 +56,7 @@
 ### Run Detail — 7 Phase Artifacts with UUID Tracking
 ![Detail](docs/screenshots/03_detail.png)
 
-> Full PDF with all screenshots: [docs/response_UI_print.pdf](docs/response_UI_print.pdf)
+> 📄 **Full Run Detail PDF:** [Run 71e86df3 — SDLC Dashboard.pdf](docs/Run%2071e86df3%20%E2%80%94%20SDLC%20Dashboard.pdf)
 
 ---
 
