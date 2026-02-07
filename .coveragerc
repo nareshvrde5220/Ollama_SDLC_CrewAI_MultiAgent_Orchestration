@@ -1,0 +1,13 @@
+[run]
+source = ["sdlc_agents", "crewai_sdlc", "flask_app"]
+omit = ["ollama_env/*", "*/__pycache__/*", "*/tests/*"]
+
+[report]
+show_missing = true
+skip_empty = true
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if __name__ == .__main__.",
+    "raise NotImplementedError",
+]

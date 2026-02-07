@@ -1,0 +1,17 @@
+# ── Core Framework ────────────────────────────────────────────────────────────
+crewai>=0.80.0
+litellm>=1.40.0
+flask>=3.0.0
+requests>=2.31.0
+
+# ── CrewAI Dependencies (auto-installed, pinned for reproducibility) ─────────
+pydantic>=2.0.0
+openai>=1.0.0
+tenacity>=8.0.0
+rich>=13.0.0
+
+# ── Development / Testing (optional) ────────────────────────────────────────
+pytest>=8.0.0
+pytest-cov>=5.0.0
+black>=24.0.0
+flake8>=7.0.0
