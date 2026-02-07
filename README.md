@@ -56,6 +56,17 @@
 ### Run Detail — 7 Phase Artifacts with UUID Tracking
 ![Detail](docs/screenshots/03_detail.png)
 
+### Agent Responses (Live Pipeline Execution)
+
+![Agent Response 1](docs/screenshots/Agent_response%20(1).png)
+![Agent Response 2](docs/screenshots/Agent_response%20(2).png)
+![Agent Response 3](docs/screenshots/Agent_response%20(3).png)
+![Agent Response 4](docs/screenshots/Agent_response%20(4).png)
+![Agent Response 5](docs/screenshots/Agent_response%20(5).png)
+![Agent Response 6](docs/screenshots/Agent_response%20(6).png)
+![Agent Response 7](docs/screenshots/Agent_response%20(7).png)
+![Agent Response 8](docs/screenshots/Agent_response%20(8).png)
+
 > 📄 **Full Run Detail PDF:** [Run 71e86df3 — SDLC Dashboard.pdf](docs/Run%2071e86df3%20%E2%80%94%20SDLC%20Dashboard.pdf)
 
 ---
