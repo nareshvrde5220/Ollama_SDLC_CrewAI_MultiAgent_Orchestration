@@ -45,6 +45,21 @@
 
 ---
 
+## 📸 Screenshots
+
+### Dashboard — Launch New Pipeline
+![Dashboard](docs/screenshots/01_dashboard.png)
+
+### Pipeline History
+![History](docs/screenshots/02_history.png)
+
+### Run Detail — 7 Phase Artifacts with UUID Tracking
+![Detail](docs/screenshots/03_detail.png)
+
+> Full PDF with all screenshots: [docs/response_UI_print.pdf](docs/response_UI_print.pdf)
+
+---
+
 ## 🧠 AI Agent Roster
 
 | # | Agent | Role | Model | VRAM |
